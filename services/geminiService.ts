@@ -24,7 +24,9 @@ TONE:
 - Use metric units (kg, Celsius).
 `;
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Use Vite environment variable for API Key to prevent 'process is not defined' error in browser
+const apiKey = (import.meta as any).env.VITE_API_KEY;
+const ai = new GoogleGenAI({ apiKey: apiKey });
 
 let chatSession: Chat | null = null;
 
