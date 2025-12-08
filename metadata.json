@@ -1,0 +1,9 @@
+{
+  "name": "MorafoAI",
+  "description": "An advanced AI-powered Livestock & Organic Farming Assistant for farmers in Lesotho.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
