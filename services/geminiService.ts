@@ -24,8 +24,28 @@ TONE:
 - Use metric units (kg, Celsius).
 `;
 
-// Use Vite environment variable for API Key to prevent 'process is not defined' error in browser
-const apiKey = (import.meta as any).env.VITE_API_KEY;
+// Safely retrieve API Key to prevent "White Screen" crashes if env is undefined
+const getApiKey = (): string => {
+  try {
+    // Check import.meta.env (Vite standard)
+    // @ts-ignore
+    if (import.meta && import.meta.env && import.meta.env.VITE_API_KEY) {
+       // @ts-ignore
+       return import.meta.env.VITE_API_KEY;
+    }
+    // Fallback to process.env (Standard Node/Vercel)
+    // @ts-ignore
+    if (typeof process !== 'undefined' && process.env && process.env.VITE_API_KEY) {
+       // @ts-ignore
+       return process.env.VITE_API_KEY;
+    }
+  } catch (e) {
+    console.warn("Could not read environment variables safely.");
+  }
+  return "";
+};
+
+const apiKey = getApiKey();
 const ai = new GoogleGenAI({ apiKey: apiKey });
 
 let chatSession: Chat | null = null;
@@ -73,7 +93,14 @@ export const sendMessageToGemini = async (text: string, imageBase64?: string, la
     return response.text || (language === 'st' ? "Ke kopa tšoarelo, ha kea utloisisa. Ke kopa o phete hape." : "I didn't quite understand that. Could you please rephrase?");
   } catch (error) {
     console.error("Gemini API Error:", error);
-    throw error;
+    if (!apiKey) {
+        return language === 'st' 
+            ? "Tšoarelo, ho na le bothata ba 'API Key'. Ke kopa o hlahlobe li-setting." 
+            : "Error: API Key is missing. Please check your Vercel settings.";
+    }
+    return language === 'st' 
+        ? "Tšoarelo, ke na le bothata ba khokahano. Ke kopa u leke hape."
+        : "Sorry, I'm having trouble connecting. Please try again.";
   }
 };
 
@@ -107,13 +134,12 @@ export const analyzeHealthImage = async (imageBase64: string, userNotes: string,
         return response.text || (language === 'st' ? "Ha ke khone ho hlahloba setšoantšo sena hajoale." : "I cannot analyze this image right now.");
     } catch (error) {
         console.error("Diagnosis Error:", error);
-        throw error;
+        return language === 'st' ? "Phoso e hlahile ha ho hlahlojoa." : "Error analyzing the image.";
     }
 }
 
 export const getMarketInsights = async (): Promise<MarketItem[]> => {
     try {
-        // Expanded list for Lesotho context with specific instruction for Basotho Chicken
         const prompt = `Generate a list of current estimated market prices (LSL/Maloti) in Lesotho specializing in Poultry.
         MUST INCLUDE: 
         1. "Khoho ea Sesotho (Big Breeds)" - specifically mention Brown Sussex, Brahma, Buff Orpington. Price ~250.
@@ -206,7 +232,6 @@ export const getFakeMarketListings = async (): Promise<MarketListing[]> => {
 }
 
 export const getCulturalEconomicInsights = async (language: Language = 'en'): Promise<string> => {
-    // Fallback content in case API fails or returns empty.
     const FALLBACK_CONTENT_EN = `
 # Poultry Farming: The Basotho Way & Modern Economics
 Poultry farming in Lesotho is transforming from a backyard hobby into a cornerstone of agricultural economic growth.
