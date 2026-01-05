@@ -20,7 +20,6 @@ CORE RESPONSIBILITIES:
 5. Market Scope: Only discuss items related to Poultry and Rabbit farming. Do not provide info on unrelated topics like fashion, electronics, or non-farming services.
 `;
 
-// Standard initialization per guidelines
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
 
 let chatSession: Chat | null = null;
@@ -31,13 +30,13 @@ const FALLBACK_INSIGHTS_EN = `
 Poultry farming is the heartbeat of rural Lesotho. Beyond simple food production, it represents a primary source of liquid capital for Basotho households.
 
 ## The Khoho ea Sesotho Legacy
-Indigenous chickens (*Khoho ea Sesotho*) are more than just birds; they are a cultural asset. Traditionally used in ceremonies and as gifts, their resilience to Lesotho's harsh winters and ability to forage makes them an ideal organic asset. While broilers provide quick turnover, "Sesotho" birds provide long-term security.
+Indigenous chickens (*Khoho ea Sesotho*) are more than just birds; they are a cultural asset. Traditionally used in ceremonies and as gifts, their resilience to Lesotho's harsh winters and ability to forage makes them an ideal organic asset.
 
 ## The Economic Shift
-In recent years, the move toward specialized broiler and layer production in districts like Maseru and Leribe has transformed the economy. However, high input costs (especially imported feed) remain a challenge. MorafoAI encourages the integration of organic supplements like *Lekhala* (Aloe) and *Moringa* to reduce mortality and improve bird health naturally.
+In recent years, the move toward specialized broiler and layer production in districts like Maseru and Leribe has transformed the economy. However, high input costs (especially imported feed) remain a challenge. MorafoAI encourages the integration of organic supplements like *Lekhala* (Aloe) and *Moringa*.
 
 ## Market Trends
-Current market data suggests a growing preference for farm-gate sales. Consumers in Lesotho increasingly value the freshness of "live-sale" poultry over frozen imports, creating a massive opportunity for local producers to dominate the domestic market.
+Current market data suggests a growing preference for farm-gate sales. Consumers in Lesotho increasingly value the freshness of "live-sale" poultry over frozen imports.
 `;
 
 const FALLBACK_INSIGHTS_ST = `
@@ -46,23 +45,28 @@ const FALLBACK_INSIGHTS_ST = `
 Temo ea likhoho ke motheo oa bophelo mahaeng a Lesotho. Hase feela tsela ea ho fumana lijo, empa ke letlotlo le ka fetoloang chelete kapele malapeng a Basotho.
 
 ## Moqoqo oa Khoho ea Sesotho
-Likhoho tsa Sesotho ke letlotlo la rona la tlhaho. Li khona ho mamella serame sa rona se kotsi le ho iphelisa ka ho fula. Le ha likhoho tsa broiler li tlisa chelete kapele, khoho ea Sesotho e fana ka tšireletso ea nako e telele.
+Likhoho tsa Sesotho ke letlotlo la rona la tlhaho. Li khona ho mamella serame sa rona se kotsi le ho iphelisa ka ho fula.
 
 ## Phetoho ea Moruo
-Lilemong tsa morao tjena, temo ea likhoho tsa nama (broilers) le tsa mahe (layers) e eketsehile haholo literekeng tse kang Maseru le Leribe. Leha ho le joalo, theko e phahameng ea lijo tse tsoang kantle e ntse e le phephetso. MorafoAI e khothaletsa tšebeliso ea litlhare tsa tlhaho tse kang *Lekhala* le *Moringa* ho fokotsa mafu.
+Lilemong tsa morao tjena, temo ea likhoho tsa nama (broilers) le tsa mahe (layers) e eketsehile haholo literekeng tse kang Maseru le Leribe. MorafoAI e khothaletsa tšebeliso ea litlhare tsa tlhaho tse kang *Lekhala* le *Moringa*.
 
 ## Maikutlo a Maraka
-Batho ba Lesotho ba se ba rata ho reka likhoho tse phelang ho feta tse hoammeng tse tsoang kantle. Sena se fa lihoai tsa rona monyetla o moholo oa ho hapa maraka a naha ka lijo tse hloekileng le tse ncha.
+Batho ba Lesotho ba se ba rata ho reka likhoho tse phelang ho feta tse hoammeng tse tsoang kantle.
 `;
 
 const FALLBACK_MARKET_PRICES: MarketItem[] = [
-    { name: "Khoho ea Sesotho (Big Breeds)", price: 250, unit: "each", trend: "up", prediction: "High demand for breeding" },
-    { name: "Basotho Chicken (Live)", price: 120, unit: "each", trend: "stable", prediction: "Standard local price" },
-    { name: "Broiler (Live - Full grown)", price: 90, unit: "each", trend: "up", prediction: "Feed costs rising" },
-    { name: "Egg Tray (Large - 30s)", price: 65, unit: "tray", trend: "stable", prediction: "Consistent demand" },
-    { name: "Day Old Chicks (Broiler)", price: 1100, unit: "box of 100", trend: "up", prediction: "Import costs high" },
-    { name: "Rabbit (Live - Meat)", price: 150, unit: "each", trend: "down", prediction: "Market saturated" },
-    { name: "Poultry Feed (Starter 50kg)", price: 480, unit: "bag", trend: "up", prediction: "Grain prices up" }
+    { name: "Khoho ea Sesotho", price: 150, unit: "each", trend: "up", prediction: "Steady demand" },
+    { name: "Broiler (Live)", price: 95, unit: "each", trend: "stable", prediction: "Standard pricing" },
+    { name: "Egg Tray (Large)", price: 68, unit: "30 eggs", trend: "up", prediction: "Rising feed costs" },
+    { name: "Day Old Chicks", price: 12, unit: "each", trend: "stable", prediction: "Imported prices" },
+    { name: "Rabbit Meat", price: 120, unit: "per kg", trend: "down", prediction: "Growing supply" }
+];
+
+const FALLBACK_MARKET_LISTINGS: MarketListing[] = [
+    { id: 'f1', item: '50 Mixed Broilers', price: 'M 90.00 each', location: 'Maseru', seller: 'Ntate Mpho', type: 'selling', time: '2 hours ago', isVerified: true },
+    { id: 'f2', item: 'Layer Cages (Used)', price: 'M 1,500', location: 'Leribe', seller: 'M\'e Lineo', type: 'selling', time: '5 hours ago', isVerified: false },
+    { id: 'f3', item: 'Looking for Rabbits', price: 'Buying', location: 'Mafeteng', seller: 'Khotso', type: 'buying', time: '1 day ago', isVerified: true },
+    { id: 'f4', item: 'Point of Lay Pullets', price: 'M 115.00', location: 'Teyateyaneng', seller: 'Berea Poultry', type: 'selling', time: '3 hours ago', isVerified: true }
 ];
 
 export const getChatSession = (): Chat => {
@@ -157,7 +161,7 @@ export const getFakeMarketListings = async (): Promise<MarketListing[]> => {
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: "Generate 15 realistic POULTRY/RABBIT ONLY marketplace listings for Lesotho.",
+            contents: "Generate 10 realistic marketplace listings for POULTRY and RABBITS in Lesotho in JSON format.",
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
@@ -179,11 +183,11 @@ export const getFakeMarketListings = async (): Promise<MarketListing[]> => {
         });
         if (response.text) {
             const listings = JSON.parse(response.text) as MarketListing[];
-            return listings.map(l => ({ ...l, isVerified: Math.random() > 0.6 }));
+            return listings.map(l => ({ ...l, isVerified: Math.random() > 0.5 }));
         }
-        return [];
+        return FALLBACK_MARKET_LISTINGS;
     } catch (error) {
-        return [];
+        return FALLBACK_MARKET_LISTINGS;
     }
 }
 
@@ -191,7 +195,7 @@ export const getCulturalEconomicInsights = async (language: Language = 'en'): Pr
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: `Write an article on Lesotho Poultry Economics. Language: ${language === 'st' ? 'Sesotho' : 'English'}.`,
+            contents: `Write an article on Lesotho Poultry Economics and Heritage. Language: ${language === 'st' ? 'Sesotho' : 'English'}.`,
         });
         return response.text || (language === 'st' ? FALLBACK_INSIGHTS_ST : FALLBACK_INSIGHTS_EN);
     } catch (error) {

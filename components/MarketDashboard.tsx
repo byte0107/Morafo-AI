@@ -103,7 +103,8 @@ const MarketDashboard: React.FC<MarketDashboardProps> = ({ language }) => {
       <div className="flex-1 overflow-y-auto pb-32 scrollbar-hide">
         {activeTab === 'prices' ? (
              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <div className="lg:col-span-7 bg-white p-8 rounded-[40px] shadow-sm border border-slate-200 min-h-[450px]">
+                {/* min-w-0 on the parent is the key fix for ResponsiveContainer warning in flex/grid */}
+                <div className="lg:col-span-7 bg-white p-8 rounded-[40px] shadow-sm border border-slate-200 min-h-[450px] min-w-0">
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="font-black text-xl text-slate-900 flex items-center gap-3"><LayoutGrid size={22} className="text-green-600" /> {language === 'st' ? "Litheko tsa Lesotho" : "Lesotho Price Index"}</h3>
@@ -111,12 +112,11 @@ const MarketDashboard: React.FC<MarketDashboardProps> = ({ language }) => {
                         </div>
                         <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">LIVE DATA</div>
                     </div>
-                    {/* Recharts container with explicit height to fix warning */}
-                    <div style={{ width: '100%', height: 350 }}>
+                    <div className="w-full h-[350px] relative overflow-hidden min-w-0">
                         {loading ? (
-                            <div className="w-full h-full flex items-center justify-center text-slate-300 font-black animate-pulse uppercase tracking-[0.2em]">{t.loading}</div>
+                            <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-black animate-pulse uppercase tracking-[0.2em]">{t.loading}</div>
                         ) : (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <BarChart data={data} margin={{top: 10, right: 10, left: -20, bottom: 50}}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                     <XAxis dataKey="name" tick={{fontSize: 9, fontWeight: 900, fill: '#64748b'}} height={60} interval={0} angle={-25} textAnchor="end" stroke="#e2e8f0" />
@@ -182,37 +182,51 @@ const MarketDashboard: React.FC<MarketDashboardProps> = ({ language }) => {
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {listings.map((item, idx) => (
-                        <div key={idx} className={`bg-white p-8 rounded-[40px] border-2 relative shadow-sm hover:shadow-2xl transition-all group ${item.isUserListing ? 'border-blue-500 ring-8 ring-blue-50' : 'border-slate-50 hover:border-slate-200'}`}>
-                            <div className="flex justify-between items-start mb-6">
-                                <span className={`font-black px-4 py-1.5 rounded-xl text-[10px] uppercase tracking-widest ${item.type === 'selling' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{item.type === 'selling' ? t.selling : t.buying}</span>
-                                <div className="text-[10px] font-black text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><Clock size={12} /> {item.time}</div>
+                {loading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[1,2,3].map(i => (
+                            <div key={i} className="bg-white h-64 rounded-[40px] border-2 border-slate-50 animate-pulse flex flex-col p-8 space-y-4">
+                                <div className="h-6 w-24 bg-slate-100 rounded-lg"></div>
+                                <div className="h-8 w-48 bg-slate-100 rounded-lg"></div>
+                                <div className="h-10 w-32 bg-slate-100 rounded-lg"></div>
+                                <div className="mt-auto h-12 w-full bg-slate-100 rounded-xl"></div>
                             </div>
-                            <h4 className="font-black text-slate-900 text-xl mb-2 group-hover:text-blue-600 transition-colors leading-tight">{item.item}</h4>
-                            <div className="text-3xl font-black text-green-600 mb-8">{item.price}</div>
-                            
-                            <div className="flex items-center justify-between border-t border-slate-50 pt-6 mt-auto">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 font-black text-sm shadow-inner">
-                                        {item.seller.charAt(0)}
-                                    </div>
-                                    <div>
-                                        <div className="text-sm font-black text-slate-800 flex items-center gap-1.5">{item.seller} {item.isVerified && <BadgeCheck size={16} className="text-blue-500" />}</div>
-                                        <div className="text-xs text-slate-400 font-bold flex items-center gap-1 mt-0.5"><MapPin size={12} /> {item.location}</div>
-                                    </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {listings.map((item, idx) => (
+                            <div key={idx} className={`bg-white p-8 rounded-[40px] border-2 relative shadow-sm hover:shadow-2xl transition-all group ${item.isUserListing ? 'border-blue-500 ring-8 ring-blue-50' : 'border-slate-50 hover:border-slate-200'}`}>
+                                <div className="flex justify-between items-start mb-6">
+                                    <span className={`font-black px-4 py-1.5 rounded-xl text-[10px] uppercase tracking-widest ${item.type === 'selling' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{item.type === 'selling' ? t.selling : t.buying}</span>
+                                    <div className="text-[10px] font-black text-slate-400 flex items-center gap-1.5 uppercase tracking-widest"><Clock size={12} /> {item.time}</div>
                                 </div>
-                                <button className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all active:scale-90">
-                                    <ChevronRight size={22} />
-                                </button>
+                                <h4 className="font-black text-slate-900 text-xl mb-2 group-hover:text-blue-600 transition-colors leading-tight">{item.item}</h4>
+                                <div className="text-3xl font-black text-green-600 mb-8">{item.price}</div>
+                                
+                                <div className="flex items-center justify-between border-t border-slate-50 pt-6 mt-auto">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 font-black text-sm shadow-inner">
+                                            {item.seller.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-black text-slate-800 flex items-center gap-1.5">{item.seller} {item.isVerified && <BadgeCheck size={16} className="text-blue-500" />}</div>
+                                            <div className="text-xs text-slate-400 font-bold flex items-center gap-1 mt-0.5"><MapPin size={12} /> {item.location}</div>
+                                        </div>
+                                    </div>
+                                    <button className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all active:scale-90">
+                                        <ChevronRight size={22} />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
         )}
       </div>
 
+      {/* FIXED FORM VISIBILITY IN MODALS */}
       {showRegisterModal && (
           <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-xl flex items-center justify-center p-4">
               <div className="bg-white rounded-[48px] w-full max-w-md p-10 shadow-2xl border border-white/20 animate-in fade-in zoom-in duration-300">
@@ -229,26 +243,26 @@ const MarketDashboard: React.FC<MarketDashboardProps> = ({ language }) => {
                   <form onSubmit={handleRegister} className="space-y-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2 block">Accredited Name</label>
-                        <input required className="w-full p-5 bg-slate-50 rounded-3xl border-2 border-slate-200 text-slate-900 font-black placeholder:text-slate-300 focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-50 outline-none transition-all text-lg" placeholder="Full name..." value={regForm.name} onChange={e => setRegForm({...regForm, name: e.target.value})} />
+                        <input required className="w-full p-5 bg-slate-100 rounded-3xl border-2 border-slate-200 text-slate-900 font-black placeholder:text-slate-300 focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-50 outline-none transition-all text-lg" placeholder="Full name..." value={regForm.name} onChange={e => setRegForm({...regForm, name: e.target.value})} />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2 block">National ID (KYC)</label>
-                        <input required className="w-full p-5 bg-slate-50 rounded-3xl border-2 border-slate-200 text-slate-900 font-black placeholder:text-slate-300 focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-50 outline-none transition-all text-lg" placeholder="ID Number..." value={regForm.nationalID} onChange={e => setRegForm({...regForm, nationalID: e.target.value})} />
+                        <input required className="w-full p-5 bg-slate-100 rounded-3xl border-2 border-slate-200 text-slate-900 font-black placeholder:text-slate-300 focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-50 outline-none transition-all text-lg" placeholder="ID Number..." value={regForm.nationalID} onChange={e => setRegForm({...regForm, nationalID: e.target.value})} />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2 block">Farm / Entity Name</label>
-                        <input required className="w-full p-5 bg-slate-50 rounded-3xl border-2 border-slate-200 text-slate-900 font-black placeholder:text-slate-300 focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-50 outline-none transition-all text-lg" placeholder="e.g. Ha-Mokhethi Poultry" value={regForm.farmName} onChange={e => setRegForm({...regForm, farmName: e.target.value})} />
+                        <input required className="w-full p-5 bg-slate-100 rounded-3xl border-2 border-slate-200 text-slate-900 font-black placeholder:text-slate-300 focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-50 outline-none transition-all text-lg" placeholder="e.g. Ha-Mokhethi Poultry" value={regForm.farmName} onChange={e => setRegForm({...regForm, farmName: e.target.value})} />
                       </div>
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2 block">District</label>
-                           <select className="w-full p-5 bg-slate-50 rounded-3xl border-2 border-slate-200 text-slate-900 font-black focus:border-green-500 focus:bg-white outline-none transition-all text-lg appearance-none" value={regForm.district} onChange={e => setRegForm({...regForm, district: e.target.value})}>
+                           <select className="w-full p-5 bg-slate-100 rounded-3xl border-2 border-slate-200 text-slate-900 font-black focus:border-green-500 focus:bg-white outline-none transition-all text-lg appearance-none" value={regForm.district} onChange={e => setRegForm({...regForm, district: e.target.value})}>
                               {DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
                            </select>
                         </div>
                         <div className="space-y-2">
                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2 block">Contact (+266)</label>
-                           <input required className="w-full p-5 bg-slate-50 rounded-3xl border-2 border-slate-200 text-slate-900 font-black placeholder:text-slate-300 focus:border-green-500 focus:bg-white outline-none transition-all text-lg" placeholder="5XXXXXXX" value={regForm.phone} onChange={e => setRegForm({...regForm, phone: e.target.value})} />
+                           <input required className="w-full p-5 bg-slate-100 rounded-3xl border-2 border-slate-200 text-slate-900 font-black placeholder:text-slate-300 focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-50 outline-none transition-all text-lg" placeholder="5XXXXXXX" value={regForm.phone} onChange={e => setRegForm({...regForm, phone: e.target.value})} />
                         </div>
                       </div>
                       <button type="submit" className="w-full py-6 bg-green-600 text-white rounded-[32px] font-black shadow-2xl shadow-green-200 hover:bg-green-700 hover:-translate-y-1 transition-all active:translate-y-0 uppercase tracking-[0.2em] text-lg mt-6">{t.submitReg}</button>
