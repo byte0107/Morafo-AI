@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { analyzeHealthImage } from '../services/geminiService';
-import { Camera, Upload, Loader2, AlertCircle, CheckCircle, Info, Bird, Rabbit } from 'lucide-react';
+import { Camera, Upload, Loader2, AlertCircle, CheckCircle, Info, Bird, Rabbit, Store, MapPin, ExternalLink, X, Stethoscope } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Language } from '../types';
 
@@ -19,40 +19,35 @@ const DiagnosisTool: React.FC<DiagnosisToolProps> = ({ language }) => {
 
   const t = {
       title: language === 'st' ? "Tlhahlobo ea Likhoho & Mebutla" : "Poultry & Rabbit Diagnosis",
-      subtitle: language === 'st' ? "Kenya setšoantšo sa phoofolo e kulang. MorafoAI e tla hlahloba boloetse." : "Upload a photo of your sick bird or rabbit. MorafoAI will identify the disease.",
+      subtitle: language === 'st' ? "Kenya setšoantšo sa phoofolo e kulang. MorafoAI e tla fana ka kalafo le moo u ka rekang litlhare." : "Upload a photo of your sick animal. MorafoAI will identify the disease and tell you where to buy medicine.",
       selectType: language === 'st' ? "Khetha Mofuta oa Phoofolo" : "Select Animal Type",
       clickToUpload: language === 'st' ? "Tobetsa ho kenya foto" : "Click to upload photo",
       describe: language === 'st' ? "Hlalosa Matšoao" : "Describe Symptoms",
-      optional: language === 'st' ? "(Ha e tlame)" : "(Optional)",
-      placeholder: language === 'st' ? "Mohlala: Khoho e'a khohlela, e na le letšollo le lesoeu..." : "E.g., The chicken is coughing, white diarrhea, swollen eyes...",
-      diagnose: language === 'st' ? "Hlahloba" : "Diagnose",
+      diagnose: language === 'st' ? "Hlahloba & Batla Litlhare" : "Diagnose & Find Treatment",
       diagnosing: language === 'st' ? "Ea Hlahloba..." : "Diagnosing...",
       clear: language === 'st' ? "Hlakola" : "Clear",
-      info: language === 'st' ? "MorafoAI e sebetsana le Likhoho le Mebutla. Re fana ka litlhare tsa sekhooa le tsa setso." : "MorafoAI specializes in Poultry & Rabbits. We provide both pharmaceutical medication and local organic remedies.",
+      info: language === 'st' ? "MorafoAI e u thusa ho fumana litlhare litsing tsa Agrivet le li-Pharmacy tsa Lesotho." : "MorafoAI helps you source vaccines and meds from local Agrivet shops and Pharmacies.",
       resultTitle: language === 'st' ? "Sephetho sa Tlhahlobo" : "Diagnosis Result",
-      disclaimer: language === 'st' ? "Kamehla bona ngaka ea liphoofolo haeba lefu le le kotsi." : "Always consult a vet if mortality is high."
+      sourcingTitle: language === 'st' ? "Recommended Local Suppliers" : "Recommended Local Suppliers",
+      sourcingDesc: language === 'st' ? "Etela litsi tsena tsa Agrivet bakeng sa litlhare tse netefalitsoeng." : "Visit these trusted Agrivet clinics for verified medications and vaccines.",
+      disclaimer: language === 'st' ? "Kamehla bona ngaka ea liphoofolo haeba lefu le le kotsi." : "Note: This is an AI guide. Always consult a vet for high mortality cases."
   };
+
+  const localSuppliers = [
+      { name: "Maseru Agrivet Clinic", loc: "Old Industrial, Maseru", service: "Vaccines & Surgery" },
+      { name: "Leribe Co-op", loc: "Hlotse Main", service: "Bulk Meds & Feed" },
+      { name: "Mafeteng Animal Health", loc: "Bus Stop Area", service: "General Poultry Support" }
+  ];
 
   const animalTypes = language === 'st' 
     ? ['Likhoho tsa Broiler', 'Likhoho tsa Mahe', 'Khoho ea Sesotho', 'Mmutla']
     : ['Broiler Chicken', 'Layer Chicken', 'Free-range (Sesotho)', 'Rabbit'];
 
-  // Helper to map UI animal selection back to API standard
-  const getApiAnimalType = (selected: string) => {
-      if (selected.includes('Broiler')) return 'Broiler Chicken';
-      if (selected.includes('Mahe') || selected.includes('Layer')) return 'Layer Chicken';
-      if (selected.includes('Sesotho')) return 'Free-range Chicken';
-      if (selected.includes('Mmutla') || selected.includes('Rabbit')) return 'Rabbit';
-      return selected;
-  };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result as string);
-      };
+      reader.onloadend = () => setImage(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
@@ -62,91 +57,78 @@ const DiagnosisTool: React.FC<DiagnosisToolProps> = ({ language }) => {
     setLoading(true);
     setResult('');
     try {
-      const diagnosis = await analyzeHealthImage(image, notes, getApiAnimalType(animalType), language);
+      const diagnosis = await analyzeHealthImage(image, notes, animalType, language);
       setResult(diagnosis);
     } catch (error) {
-      setResult(language === 'st' ? "Phoso e hlahile ha ho hlahlojoa. Ke kopa u leke hape." : "Error analyzing the image. Please try again.");
+      setResult("Error analyzing image.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-6 bg-red-50 border-b border-red-100">
-        <h2 className="text-xl font-bold text-red-900 flex items-center gap-2">
-          <Camera className="w-6 h-6" />
+    <div className="flex flex-col h-full bg-slate-50 rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="p-6 bg-red-600 text-white shadow-md">
+        <h2 className="text-2xl font-black flex items-center gap-3 uppercase tracking-tight">
+          <Stethoscope className="w-8 h-8" />
           {t.title}
         </h2>
-        <p className="text-sm text-red-700 mt-1">
-          {t.subtitle}
-        </p>
+        <p className="text-red-100 mt-2 font-medium opacity-90 leading-tight">{t.subtitle}</p>
       </div>
 
-      <div className="p-6 overflow-y-auto space-y-6">
-        {/* Animal Type Selection */}
-        <div>
-           <label className="block text-sm font-bold text-gray-700 mb-2">{t.selectType}</label>
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="p-6 overflow-y-auto space-y-6 scrollbar-hide">
+        {/* Animal Selection */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">{t.selectType}</label>
+           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                {animalTypes.map(type => (
                    <button 
                      key={type}
                      onClick={() => setAnimalType(type)}
-                     className={`p-3 rounded-lg border text-sm font-medium flex items-center justify-center gap-2 transition
-                        ${animalType === type ? 'bg-red-600 text-white border-red-600' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}
+                     className={`p-3 rounded-2xl border-2 text-sm font-bold flex flex-col items-center justify-center gap-2 transition-all duration-200
+                        ${animalType === type ? 'bg-red-50 text-red-700 border-red-500 shadow-md ring-2 ring-red-100' : 'bg-white border-slate-100 text-slate-500 hover:border-slate-300'}
                      `}
                    >
-                       {(type.includes('Mmutla') || type.includes('Rabbit')) ? <Rabbit size={16} /> : <Bird size={16} />}
-                       {type}
+                       {(type.includes('Mmutla') || type.includes('Rabbit')) ? <Rabbit size={20} /> : <Bird size={20} />}
+                       <span className="text-center leading-tight">{type}</span>
                    </button>
                ))}
            </div>
         </div>
 
-        {/* Image Upload Area */}
+        {/* Upload Box */}
         <div 
-          className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer bg-gray-50/50"
+          className="border-2 border-dashed border-slate-300 rounded-[32px] p-8 text-center hover:bg-white hover:border-red-400 transition-all cursor-pointer bg-slate-100/30 group"
           onClick={() => fileInputRef.current?.click()}
         >
           {image ? (
-            <div className="relative">
-              <img src={image} alt="Preview" className="max-h-64 mx-auto rounded-lg shadow-md" />
-              <button 
-                onClick={(e) => { e.stopPropagation(); setImage(null); setResult(''); }}
-                className="absolute top-2 right-2 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg"
-              >
-                {t.clear}
+            <div className="relative inline-block">
+              <img src={image} alt="Preview" className="max-h-72 rounded-3xl shadow-2xl border-4 border-white" />
+              <button onClick={(e) => { e.stopPropagation(); setImage(null); setResult(''); }} className="absolute -top-4 -right-4 bg-red-600 text-white p-2.5 rounded-full shadow-2xl hover:bg-red-700 hover:scale-110 transition active:scale-95">
+                <X className="w-5 h-5" />
               </button>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-3 text-gray-500 py-6">
-              <div className="p-4 bg-white rounded-full shadow-sm">
-                <Upload className="w-8 h-8 text-green-600" />
+            <div className="flex flex-col items-center gap-4 text-slate-400 py-12">
+              <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
+                <Upload className="w-10 h-10 text-red-500" />
               </div>
               <div>
-                <p className="font-bold text-gray-700">{t.clickToUpload}</p>
-                <p className="text-xs text-gray-400 mt-1">JPG, PNG</p>
+                <p className="font-black text-slate-700 text-lg">{t.clickToUpload}</p>
+                <p className="text-xs mt-1 font-medium">Clear photos of eyes, droppings, or legs work best.</p>
               </div>
             </div>
           )}
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            accept="image/*" 
-            className="hidden" 
-          />
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
         </div>
 
-        {/* Notes Input */}
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-            {t.describe} <span className="text-gray-400 font-normal">{t.optional}</span>
-          </label>
+        {/* Notes */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">{t.describe}</label>
           <textarea
-            className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:outline-none bg-gray-50"
+            className="w-full p-4 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-red-50 focus:border-red-500 bg-slate-50 text-slate-800 font-bold placeholder:text-slate-300 transition-all outline-none"
             rows={3}
-            placeholder={t.placeholder}
+            placeholder="Tell us more: e.g. Diarrhea, sneezing, or low appetite..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
@@ -156,44 +138,83 @@ const DiagnosisTool: React.FC<DiagnosisToolProps> = ({ language }) => {
         <button
           onClick={handleDiagnose}
           disabled={!image || loading}
-          className={`w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all shadow-md text-lg
-            ${!image || loading ? 'bg-gray-300 cursor-not-allowed text-gray-500' : 'bg-green-600 hover:bg-green-700 hover:scale-[1.02]'}
+          className={`w-full py-6 rounded-3xl font-black text-white flex items-center justify-center gap-3 transition-all shadow-2xl text-xl uppercase tracking-widest
+            ${!image || loading ? 'bg-slate-300 cursor-not-allowed shadow-none' : 'bg-red-600 hover:bg-red-700 hover:-translate-y-1 active:translate-y-0'}
           `}
         >
-          {loading ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              {t.diagnosing}
-            </>
-          ) : (
-            <>
-              <CheckCircle className="w-6 h-6" />
-              {t.diagnose}
-            </>
-          )}
+          {loading ? <><Loader2 className="w-7 h-7 animate-spin" /> {t.diagnosing}</> : <><CheckCircle className="w-7 h-7" /> {t.diagnose}</>}
         </button>
 
-        {/* Info Box */}
         {!result && !loading && (
-            <div className="flex gap-3 p-4 bg-blue-50 text-blue-800 rounded-lg text-sm border border-blue-100">
-                <Info className="w-5 h-5 flex-shrink-0" />
-                <p>{t.info}</p>
+            <div className="flex gap-4 p-6 bg-blue-600 rounded-3xl text-white shadow-lg shadow-blue-200">
+                <div className="p-3 bg-white/20 rounded-2xl shadow-inner shrink-0 self-start">
+                    <Info className="w-6 h-6" />
+                </div>
+                <div>
+                    <h4 className="font-black mb-1">{language === 'st' ? "Tsebo ea Bohlokoa" : "How it Works"}</h4>
+                    <p className="text-sm font-medium text-blue-50 leading-relaxed">{t.info}</p>
+                </div>
             </div>
         )}
 
-        {/* Result Area */}
         {result && (
-          <div className="mt-2 p-6 bg-white rounded-xl border border-gray-200 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h3 className="font-bold text-xl text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
-              <AlertCircle className="w-6 h-6 text-amber-500" />
-              {t.resultTitle}
-            </h3>
-            <div className="prose prose-sm prose-green max-w-none text-gray-700">
-               <ReactMarkdown>{result}</ReactMarkdown>
+          <div className="mt-4 space-y-6">
+            {/* AI Result Card */}
+            <div className="p-8 bg-white rounded-[40px] border border-slate-200 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-red-50 rounded-full -mr-24 -mt-24 opacity-60"></div>
+                <h3 className="font-black text-3xl text-slate-900 mb-8 flex items-center gap-4 pb-6 border-b border-slate-100">
+                  <AlertCircle className="w-10 h-10 text-red-500" />
+                  {t.resultTitle}
+                </h3>
+                <div className="prose prose-slate md:prose-lg max-w-none text-slate-700 font-medium leading-relaxed prose-headings:font-black prose-headings:text-slate-900 prose-strong:text-red-600">
+                  <ReactMarkdown>{result}</ReactMarkdown>
+                </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-100 text-center">
-                 <p className="text-xs text-gray-400 italic">{t.disclaimer}</p>
+
+            {/* Local Suppliers & General Recommendation Box Combined */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Sourcing List Card */}
+                <div className="p-8 bg-green-600 rounded-[40px] text-white shadow-xl shadow-green-200 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500"></div>
+                    <h4 className="font-black text-2xl mb-2 flex items-center gap-3">
+                        <Store className="w-8 h-8" />
+                        {t.sourcingTitle}
+                    </h4>
+                    <p className="text-green-100 text-sm mb-6 font-medium leading-relaxed">{t.sourcingDesc}</p>
+                    <div className="space-y-4">
+                        {localSuppliers.map((s, i) => (
+                            <div key={i} className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 flex items-center justify-between hover:bg-white/20 transition-colors">
+                                <div>
+                                    <div className="font-black text-base">{s.name}</div>
+                                    <div className="text-xs text-green-200 flex items-center gap-1 mt-1 font-bold"><MapPin size={12} strokeWidth={3} /> {s.loc}</div>
+                                </div>
+                                <div className="text-[10px] bg-green-500 px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm">{s.service}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Sourcing Text Card */}
+                <div className="p-8 bg-slate-900 rounded-[40px] text-white shadow-xl shadow-slate-200 flex flex-col justify-between border-b-8 border-red-600">
+                    <div>
+                        <div className="p-4 bg-white/10 rounded-2xl w-fit mb-6">
+                            <Info className="w-8 h-8 text-blue-400" />
+                        </div>
+                        <h4 className="font-black text-2xl mb-3">
+                            {language === 'st' ? "Keletso ea Bohlokoa" : "Where to start?"}
+                        </h4>
+                        <p className="text-slate-400 font-bold text-base leading-relaxed mb-6 italic">
+                            "{t.info}"
+                        </p>
+                    </div>
+                    <button className="w-full py-4 bg-white/10 hover:bg-white text-slate-400 hover:text-slate-900 rounded-2xl font-black flex items-center justify-center gap-3 transition-all border border-white/10">
+                        <ExternalLink size={20} />
+                        {language === 'st' ? "Sheba Pholiso ea Tlhaho" : "Visit Agrivet Portal"}
+                    </button>
+                </div>
             </div>
+
+            <p className="text-center text-[10px] text-slate-400 font-black uppercase tracking-[0.4em] pb-8 pt-4">{t.disclaimer}</p>
           </div>
         )}
       </div>

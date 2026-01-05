@@ -14,49 +14,62 @@ Always use respectful terms (Ntate, M'e, Khotso).
 
 CORE RESPONSIBILITIES:
 1. Poultry & Rabbit Health: Identify diseases specifically in chickens (Newcastle, Coccidiosis, Flu, Gumboro) and Rabbits (Snuffles, Ear mites).
-2. Feed & Nutrition: Advise on feed stages (Starter, Grower, Finisher) and organic supplements (Aloe/Lekhala, Moringa).
-3. Weather: Warn about risks like Frost (Serame) and Heat (Mocheso) which kills broilers.
-4. Market: Provide insights on prices for eggs, live chickens, and meat.
-
-TONE:
-- Professional, encouraging, and locally relevant.
-- Assume the user is in Lesotho.
-- Use metric units (kg, Celsius).
+2. Medicine Sourcing: When recommending treatment, ALWAYS suggest where to buy it in Lesotho. Mention "Agrivet clinics", "Co-operatives (Co-ops)", "Local Pharmacies", or "Animal Health Suppliers" in major districts like Maseru, Leribe, and Mafeteng.
+3. Feed & Nutrition: Advise on feed stages (Starter, Grower, Finisher) and organic supplements (Aloe/Lekhala, Moringa).
+4. Weather: Warn about risks like Frost (Serame) and Heat (Mocheso) which kills broilers.
+5. Market Scope: Only discuss items related to Poultry and Rabbit farming. Do not provide info on unrelated topics like fashion, electronics, or non-farming services.
 `;
 
-// Safely retrieve API Key to prevent "White Screen" crashes if env is undefined
-const getApiKey = (): string => {
-  try {
-    // Check import.meta.env (Vite standard)
-    // @ts-ignore
-    if (import.meta && import.meta.env && import.meta.env.VITE_API_KEY) {
-       // @ts-ignore
-       return import.meta.env.VITE_API_KEY;
-    }
-    // Fallback to process.env (Standard Node/Vercel)
-    // @ts-ignore
-    if (typeof process !== 'undefined' && process.env && process.env.VITE_API_KEY) {
-       // @ts-ignore
-       return process.env.VITE_API_KEY;
-    }
-  } catch (e) {
-    console.warn("Could not read environment variables safely.");
-  }
-  return "";
-};
-
-const apiKey = getApiKey();
-const ai = new GoogleGenAI({ apiKey: apiKey });
+// Standard initialization per guidelines
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
 
 let chatSession: Chat | null = null;
+
+const FALLBACK_INSIGHTS_EN = `
+# The Wealth of the Village: Poultry in Lesotho
+
+Poultry farming is the heartbeat of rural Lesotho. Beyond simple food production, it represents a primary source of liquid capital for Basotho households.
+
+## The Khoho ea Sesotho Legacy
+Indigenous chickens (*Khoho ea Sesotho*) are more than just birds; they are a cultural asset. Traditionally used in ceremonies and as gifts, their resilience to Lesotho's harsh winters and ability to forage makes them an ideal organic asset. While broilers provide quick turnover, "Sesotho" birds provide long-term security.
+
+## The Economic Shift
+In recent years, the move toward specialized broiler and layer production in districts like Maseru and Leribe has transformed the economy. However, high input costs (especially imported feed) remain a challenge. MorafoAI encourages the integration of organic supplements like *Lekhala* (Aloe) and *Moringa* to reduce mortality and improve bird health naturally.
+
+## Market Trends
+Current market data suggests a growing preference for farm-gate sales. Consumers in Lesotho increasingly value the freshness of "live-sale" poultry over frozen imports, creating a massive opportunity for local producers to dominate the domestic market.
+`;
+
+const FALLBACK_INSIGHTS_ST = `
+# Letlotlo la Motse: Temo ea Likhoho Lesotho
+
+Temo ea likhoho ke motheo oa bophelo mahaeng a Lesotho. Hase feela tsela ea ho fumana lijo, empa ke letlotlo le ka fetoloang chelete kapele malapeng a Basotho.
+
+## Moqoqo oa Khoho ea Sesotho
+Likhoho tsa Sesotho ke letlotlo la rona la tlhaho. Li khona ho mamella serame sa rona se kotsi le ho iphelisa ka ho fula. Le ha likhoho tsa broiler li tlisa chelete kapele, khoho ea Sesotho e fana ka tšireletso ea nako e telele.
+
+## Phetoho ea Moruo
+Lilemong tsa morao tjena, temo ea likhoho tsa nama (broilers) le tsa mahe (layers) e eketsehile haholo literekeng tse kang Maseru le Leribe. Leha ho le joalo, theko e phahameng ea lijo tse tsoang kantle e ntse e le phephetso. MorafoAI e khothaletsa tšebeliso ea litlhare tsa tlhaho tse kang *Lekhala* le *Moringa* ho fokotsa mafu.
+
+## Maikutlo a Maraka
+Batho ba Lesotho ba se ba rata ho reka likhoho tse phelang ho feta tse hoammeng tse tsoang kantle. Sena se fa lihoai tsa rona monyetla o moholo oa ho hapa maraka a naha ka lijo tse hloekileng le tse ncha.
+`;
+
+const FALLBACK_MARKET_PRICES: MarketItem[] = [
+    { name: "Khoho ea Sesotho (Big Breeds)", price: 250, unit: "each", trend: "up", prediction: "High demand for breeding" },
+    { name: "Basotho Chicken (Live)", price: 120, unit: "each", trend: "stable", prediction: "Standard local price" },
+    { name: "Broiler (Live - Full grown)", price: 90, unit: "each", trend: "up", prediction: "Feed costs rising" },
+    { name: "Egg Tray (Large - 30s)", price: 65, unit: "tray", trend: "stable", prediction: "Consistent demand" },
+    { name: "Day Old Chicks (Broiler)", price: 1100, unit: "box of 100", trend: "up", prediction: "Import costs high" },
+    { name: "Rabbit (Live - Meat)", price: 150, unit: "each", trend: "down", prediction: "Market saturated" },
+    { name: "Poultry Feed (Starter 50kg)", price: 480, unit: "bag", trend: "up", prediction: "Grain prices up" }
+];
 
 export const getChatSession = (): Chat => {
   if (!chatSession) {
     chatSession = ai.chats.create({
-      model: 'gemini-2.5-flash',
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-      },
+      model: 'gemini-3-flash-preview',
+      config: { systemInstruction: SYSTEM_INSTRUCTION },
     });
   }
   return chatSession;
@@ -64,100 +77,59 @@ export const getChatSession = (): Chat => {
 
 export const sendMessageToGemini = async (text: string, imageBase64?: string, language: Language = 'en'): Promise<string> => {
   const chat = getChatSession();
-
   try {
     let response: GenerateContentResponse;
     const langInstruction = language === 'st' ? " (Please reply in Sesotho)" : "";
     const messageContent = text + langInstruction;
-
     if (imageBase64) {
         const mimeType = imageBase64.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
         const data = imageBase64.split(',')[1];
-        
         response = await chat.sendMessage({
-            contents: [
-                {
-                    role: 'user',
-                    parts: [
-                        { text: messageContent },
-                        { inlineData: { mimeType, data } }
-                    ]
-                }
-            ]
+            contents: [{
+                role: 'user',
+                parts: [{ text: messageContent }, { inlineData: { mimeType, data } }]
+            }]
         });
-
     } else {
         response = await chat.sendMessage({ message: messageContent });
     }
-    
-    return response.text || (language === 'st' ? "Ke kopa tšoarelo, ha kea utloisisa. Ke kopa o phete hape." : "I didn't quite understand that. Could you please rephrase?");
+    return response.text || "No response";
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    if (!apiKey) {
-        return language === 'st' 
-            ? "Tšoarelo, ho na le bothata ba 'API Key'. Ke kopa o hlahlobe li-setting." 
-            : "Error: API Key is missing. Please check your Vercel settings.";
-    }
-    return language === 'st' 
-        ? "Tšoarelo, ke na le bothata ba khokahano. Ke kopa u leke hape."
-        : "Sorry, I'm having trouble connecting. Please try again.";
+    return language === 'st' ? "Phoso ea khokahano." : "Connection error.";
   }
 };
 
 export const analyzeHealthImage = async (imageBase64: string, userNotes: string, animalType: string, language: Language = 'en'): Promise<string> => {
     try {
-        const model = 'gemini-2.5-flash';
         const mimeType = imageBase64.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
         const data = imageBase64.split(',')[1];
-        
-        const langPrompt = language === 'st' 
-            ? "Provide the diagnosis and advice strictly in Southern Sotho (Sesotho)." 
-            : "Provide the diagnosis and advice in English.";
-
+        const langPrompt = language === 'st' ? "Reply in Southern Sotho." : "Reply in English.";
         const response = await ai.models.generateContent({
-            model,
+            model: 'gemini-3-flash-preview',
             contents: {
                 parts: [
                     { inlineData: { mimeType, data } },
-                    { text: `Analyze this image of a sick ${animalType}. Farmer notes: ${userNotes}. 
+                    { text: `Analyze health of this sick ${animalType}. Notes: ${userNotes}. 
                     ${langPrompt}
-                    1. What is likely wrong? (Focus on Poultry/Rabbit common diseases in Southern Africa).
-                    2. Clinical treatment (Antibiotics, etc available in Lesotho). 
-                    3. Organic/Home remedy (e.g., Lekhala, Garlic). 
-                    4. Prevention.` }
+                    1. Likely diagnosis.
+                    2. Recommended medicine (Specifically mention where to buy it in Lesotho, e.g., Agrivet, Pharmacies, Co-ops).
+                    3. Organic home remedies.
+                    4. Prevention tips.` }
                 ]
             },
-            config: {
-                systemInstruction: SYSTEM_INSTRUCTION
-            }
+            config: { systemInstruction: SYSTEM_INSTRUCTION }
         });
-        return response.text || (language === 'st' ? "Ha ke khone ho hlahloba setšoantšo sena hajoale." : "I cannot analyze this image right now.");
+        return response.text || "Analysis failed.";
     } catch (error) {
-        console.error("Diagnosis Error:", error);
-        return language === 'st' ? "Phoso e hlahile ha ho hlahlojoa." : "Error analyzing the image.";
+        return "Error analyzing image.";
     }
 }
 
 export const getMarketInsights = async (): Promise<MarketItem[]> => {
     try {
-        const prompt = `Generate a list of current estimated market prices (LSL/Maloti) in Lesotho specializing in Poultry.
-        MUST INCLUDE: 
-        1. "Khoho ea Sesotho (Big Breeds)" - specifically mention Brown Sussex, Brahma, Buff Orpington. Price ~250.
-        2. Basotho Chicken (Live - Ordinary)
-        3. Broiler (Live - Full grown)
-        4. Egg Tray (Large - 30s)
-        5. Day Old Chicks (Broiler - per box of 100)
-        6. Rabbit (Live - Meat breed)
-        7. 50kg Poultry Feed (Starter)
-        8. 50kg Poultry Feed (Finisher)
-        9. Lucerne Bale
-        10. Sunflower Cake (kg)
-        
-        Indicate if price is trending up or down.`;
-        
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
+            model: 'gemini-3-flash-preview',
+            contents: "Generate current Lesotho Poultry market prices in JSON format.",
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
@@ -165,39 +137,27 @@ export const getMarketInsights = async (): Promise<MarketItem[]> => {
                     items: {
                         type: Type.OBJECT,
                         properties: {
-                            name: { type: Type.STRING, description: "Product name" },
-                            price: { type: Type.NUMBER, description: "Price in Maloti" },
-                            unit: { type: Type.STRING, description: "Unit e.g., kg, tray, each" },
+                            name: { type: Type.STRING },
+                            price: { type: Type.NUMBER },
+                            unit: { type: Type.STRING },
                             trend: { type: Type.STRING, enum: ["up", "down", "stable"] },
-                            prediction: { type: Type.STRING, description: "Short reason for trend or breed details" }
+                            prediction: { type: Type.STRING }
                         }
                     }
                 }
             }
         });
-        
-        if (response.text) {
-            return JSON.parse(response.text) as MarketItem[];
-        }
-        return [];
+        return response.text ? JSON.parse(response.text) : FALLBACK_MARKET_PRICES;
     } catch (error) {
-        console.error("Market Data Error:", error);
-        return [];
+        return FALLBACK_MARKET_PRICES;
     }
 }
 
 export const getFakeMarketListings = async (): Promise<MarketListing[]> => {
     try {
-        const prompt = `Generate exactly 20 realistic marketplace listings suitable for a Lesotho Poultry Farmers Facebook group. 
-        Mix of Selling and Buying. 
-        Use real Lesotho districts/towns.
-        Items must be POULTRY/RABBIT focused: Day old chicks, Point of Lay, Cobb 500, Boschveld, Cages, Drinkers, Feeds, Rabbits (Chinchilla/New Zealand).
-        Prices should be realistic in Maloti (M) or 'Negotiable'.
-        Seller names should sound like local Basotho names.`;
-        
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
+            model: 'gemini-3-flash-preview',
+            contents: "Generate 15 realistic POULTRY/RABBIT ONLY marketplace listings for Lesotho.",
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
@@ -217,13 +177,9 @@ export const getFakeMarketListings = async (): Promise<MarketListing[]> => {
                 }
             }
         });
-
         if (response.text) {
             const listings = JSON.parse(response.text) as MarketListing[];
-            return listings.map(l => ({
-                ...l,
-                isVerified: Math.random() > 0.6
-            }));
+            return listings.map(l => ({ ...l, isVerified: Math.random() > 0.6 }));
         }
         return [];
     } catch (error) {
@@ -232,67 +188,22 @@ export const getFakeMarketListings = async (): Promise<MarketListing[]> => {
 }
 
 export const getCulturalEconomicInsights = async (language: Language = 'en'): Promise<string> => {
-    const FALLBACK_CONTENT_EN = `
-# Poultry Farming: The Basotho Way & Modern Economics
-Poultry farming in Lesotho is transforming from a backyard hobby into a cornerstone of agricultural economic growth.
-### The Economic Shift
-With the rising cost of red meat, chicken has become the primary source of protein for Basotho families.
-### Khotso, Pula, Nala: The Organic Advantage
-Basotho have a unique advantage: our traditional knowledge. The market is shifting towards organic produce.
-    `;
-
-    const FALLBACK_CONTENT_ST = `
-# Tlhahiso ea Likhoho: Mokhoa oa Basotho le Moruo
-Temo ea likhoho Lesotho e fetoha ho tloha ho hoba mokhoa oa ho iphelisa feela ho ba khoebo e kholo ea moruo.
-### Phetoho ea Moruo
-Ka lebaka la ho nyoloha ha litheko tsa nama e khubelu, nama ea khoho e se e le eona mohloli o ka sehloohong oa protheine malapeng a Basotho.
-### Khotso, Pula, Nala: Molemo oa Tlhaho
-Basotho ba na le monyetla o ikhethang: tsebo ea rona ea setso. 'Maraka o batla lihlahisoa tsa tlhaho (organic).
-    `;
-
-    const fallback = language === 'st' ? FALLBACK_CONTENT_ST : FALLBACK_CONTENT_EN;
-
     try {
-        const langInstruction = language === 'st' 
-            ? "Write strictly in Southern Sotho (Sesotho)." 
-            : "Write in English.";
-
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `Write a short, engaging article (approx 300 words) titled "Poultry Farming: The Basotho Way & Modern Economics".
-            ${langInstruction}
-            
-            Key Points to cover:
-            1. Current economic trends in Lesotho poultry (Profitability of Eggs vs Meat).
-            2. Cultural practices: How traditional methods (Free range/Khoho ea Sesotho) are becoming premium markets.
-            3. Mention the use of "Lekhala" (Aloe) as a cultural strength in organic farming.
-            4. Encouragement for youth to see poultry as a business.
-            
-            Format with Markdown headers.`,
+            model: 'gemini-3-flash-preview',
+            contents: `Write an article on Lesotho Poultry Economics. Language: ${language === 'st' ? 'Sesotho' : 'English'}.`,
         });
-
-        if (response.text && response.text.length > 50) {
-            return response.text;
-        }
-        return fallback;
+        return response.text || (language === 'st' ? FALLBACK_INSIGHTS_ST : FALLBACK_INSIGHTS_EN);
     } catch (error) {
-        console.error("Insights error", error);
-        return fallback;
+        return language === 'st' ? FALLBACK_INSIGHTS_ST : FALLBACK_INSIGHTS_EN;
     }
 }
 
 export const getWeatherRisk = async (lat?: number, lng?: number, language: Language = 'en'): Promise<WeatherRisk> => {
      try {
-        let locationContext = "Lesotho generally";
-        if (lat && lng) {
-            locationContext = `coordinates ${lat}, ${lng}`;
-        }
-        
-        const langInstruction = language === 'st' ? "Sesotho" : "English";
-
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `Based on the current season and weather in ${locationContext}, what is the single biggest weather risk for POULTRY farmers today? Choose from: Heat (Mocheso), Frost (Serame), Drought, Heavy Rain, Hail. Provide specific advice for Chickens in ${langInstruction}.`,
+            model: 'gemini-3-flash-preview',
+            contents: `Poultry weather risk for Lesotho. Lang: ${language === 'st' ? 'Sesotho' : 'English'}.`,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
@@ -300,19 +211,14 @@ export const getWeatherRisk = async (lat?: number, lng?: number, language: Langu
                     properties: {
                         type: { type: Type.STRING, enum: ['Mocheso', 'Serame', 'Komello', 'Pula', 'Sefako', 'None'] },
                         level: { type: Type.STRING, enum: ['Low', 'Medium', 'High', 'Critical'] },
-                        advice: { type: Type.STRING, description: `Specific actionable advice in ${langInstruction}` },
-                        locationName: { type: Type.STRING, description: "Name of the district or area" }
+                        advice: { type: Type.STRING },
+                        locationName: { type: Type.STRING }
                     }
                 }
             }
         });
-        
-        if (response.text) {
-            return JSON.parse(response.text) as WeatherRisk;
-        }
-        return { type: 'None', level: 'Low', advice: 'Conditions are stable. Continue monitoring.' };
+        return response.text ? JSON.parse(response.text) : { type: 'None', level: 'Low', advice: "Normal" };
     } catch (error) {
-        console.error("Weather Risk Error:", error);
-        return { type: 'None', level: 'Low', advice: 'Could not fetch weather data.' };
+        return { type: 'None', level: 'Low', advice: "Normal" };
     }
 }
